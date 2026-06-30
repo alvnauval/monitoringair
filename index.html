@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WQ-7 // Panel Monitoring Air</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  :root{
+    --steel-1:#15181a;
+    --steel-2:#1d2123;
+    --steel-3:#262b2d;
+    --panel:#202425;
+    --rivet:#3a4144;
+    --line:#3a4144;
+    --text:#dfe3e0;
+    --text-dim:#7d8a85;
+    --amber:#ff9e1b;
+    --amber-dim:#7a4f10;
+    --green:#5fd38d;
+    --red:#ff4d4d;
+    --yellow-stripe:#caa12a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at top, #20262a 0%, var(--steel-1) 60%);
+    color:var(--text);
+    font-family:'Oswald',sans-serif;
+    min-height:100vh;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+
+  /* hazard stripe top bar */
+  .hazard{
+    height:10px;
+    background:repeating-linear-gradient(135deg,var(--yellow-stripe) 0 16px, var(--steel-1) 16px 32px);
+    opacity:0.85;
+  }
+
+  header{
+    padding:22px 32px 18px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:14px;
+    background:linear-gradient(180deg, var(--steel-2), var(--steel-1));
+  }
+  .id-block{
+    display:flex;
+    align-items:center;
+    gap:16px;
+  }
+  .bolt{
+    width:10px;height:10px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #555 0%, #1a1a1a 70%);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.2);
+  }
+  .title-stack .unit-id{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.2em;
+    color:var(--amber);
+    text-transform:uppercase;
+  }
+  .title-stack .title{
+    font-size:clamp(22px,3.4vw,32px);
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    line-height:1.1;
+  }
+  .status-strip{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+  }
+  .led{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--green);
+    box-shadow:0 0 8px var(--green);
+    animation:blink 2s infinite;
+  }
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+  main{
+    padding:30px 32px 70px;
+    max-width:1180px;
+    margin:0 auto;
+  }
+
+  .gauge-row{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:18px;
+    margin-bottom:24px;
+  }
+
+  .panel{
+    background:linear-gradient(180deg, var(--panel), #1a1d1e);
+    border:1px solid var(--line);
+    border-radius:4px;
+    position:relative;
+    box-shadow:0 4px 14px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+  .panel::before, .panel::after{
+    content:'';
+    position:absolute; top:8px; width:6px; height:6px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #666 0%, #161616 75%);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.25);
+  }
+  .panel::before{left:8px;}
+  .panel::after{right:8px;}
+  .panel .corner-bl, .panel .corner-br{
+    position:absolute; bottom:8px; width:6px; height:6px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #666 0%, #161616 75%);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.25);
+  }
+  .panel .corner-bl{left:8px;}
+  .panel .corner-br{right:8px;}
+
+  .gauge-card{
+    padding:22px 24px 20px;
+  }
+  .gauge-card .label-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:6px;
+  }
+  .gauge-card .param{
+    font-size:13px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    font-weight:500;
+  }
+  .gauge-card .code{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    color:var(--text-dim);
+    opacity:0.7;
+  }
+  .gauge-card .reading{
+    font-family:'JetBrains Mono',monospace;
+    font-size:52px;
+    font-weight:700;
+    color:var(--amber);
+    line-height:1;
+    text-shadow:0 0 18px rgba(255,158,27,0.35);
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    margin:10px 0 14px;
+  }
+  .gauge-card .reading .u{
+    font-size:15px;
+    color:var(--text-dim);
+    font-weight:400;
+  }
+
+  /* bar meter */
+  .meter{
+    height:8px;
+    background:#0e1011;
+    border-radius:2px;
+    overflow:hidden;
+    border:1px solid var(--line);
+    position:relative;
+  }
+  .meter-fill{
+    height:100%;
+    background:linear-gradient(90deg, var(--green), var(--amber) 70%, var(--red));
+    width:0%;
+    transition:width 0.6s ease;
+  }
+  .meter-scale{
+    display:flex;
+    justify-content:space-between;
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;
+    color:var(--text-dim);
+    margin-top:4px;
+  }
+
+  .status-tag{
+    margin-top:14px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    padding:6px 10px;
+    border-left:3px solid var(--green);
+    background:rgba(95,211,141,0.07);
+    color:var(--green);
+  }
+  .status-tag.warn{border-color:var(--amber);background:rgba(255,158,27,0.08);color:var(--amber);}
+  .status-tag.bad{border-color:var(--red);background:rgba(255,77,77,0.08);color:var(--red);}
+
+  /* log panel */
+  .log-panel{
+    padding:18px 22px 22px;
+  }
+  .log-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.12em;
+    color:var(--text-dim);
+    border-bottom:1px solid var(--line);
+    padding-bottom:10px;
+    margin-bottom:6px;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+  }
+  th{
+    text-align:left;
+    padding:9px 8px;
+    font-size:10px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    border-bottom:1px solid var(--line);
+  }
+  td{
+    padding:9px 8px;
+    border-bottom:1px solid #2a2f31;
+    color:var(--text);
+  }
+  tbody tr:hover{background:rgba(255,158,27,0.04);}
+  tbody tr:first-child td{color:var(--amber);}
+
+  #msg{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--red);
+    margin-top:10px;
+    min-height:14px;
+  }
+
+  footer{
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.1em;
+    color:var(--text-dim);
+    padding:20px;
+    text-transform:uppercase;
+    border-top:1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+
+<div class="hazard"></div>
+
+<header>
+  <div class="id-block">
+    <div class="bolt"></div>
+    <div class="title-stack">
+      <div class="unit-id">UNIT WQ-7 / STASIUN PEMANTAUAN</div>
+      <div class="title">Panel Kualitas Air</div>
+    </div>
+  </div>
+  <div class="status-strip">
+    <span class="led" id="live-led"></span>
+    <span id="clock">—</span>
+  </div>
+</header>
+
+<main>
+  <div class="gauge-row">
+
+    <div class="panel gauge-card">
+      <div class="corner-bl"></div><div class="corner-br"></div>
+      <div class="label-row">
+        <span class="param">Derajat Keasaman</span>
+        <span class="code">SENSOR-01 / PH</span>
+      </div>
+      <div class="reading" id="ph-value">--.--<span class="u">pH</span></div>
+      <div class="meter"><div class="meter-fill" id="ph-meter"></div></div>
+      <div class="meter-scale"><span>0</span><span>7</span><span>14</span></div>
+      <div class="status-tag" id="ph-status">MENUNGGU DATA</div>
+    </div>
+
+    <div class="panel gauge-card">
+      <div class="corner-bl"></div><div class="corner-br"></div>
+      <div class="label-row">
+        <span class="param">Total Padatan Terlarut</span>
+        <span class="code">SENSOR-02 / TDS</span>
+      </div>
+      <div class="reading" id="tds-value">----<span class="u">ppm</span></div>
+      <div class="meter"><div class="meter-fill" id="tds-meter"></div></div>
+      <div class="meter-scale"><span>0</span><span>500</span><span>1000+</span></div>
+      <div class="status-tag" id="tds-status">MENUNGGU DATA</div>
+    </div>
+
+  </div>
+
+  <div class="panel log-panel">
+    <div class="log-head">
+      <span>Log Pembacaan — Riwayat Terakhir</span>
+      <span id="row-count">0 ENTRI</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Waktu</th><th>pH</th><th>TDS (ppm)</th></tr>
+      </thead>
+      <tbody id="data-body">
+        <tr><td colspan="3">MEMUAT DATA...</td></tr>
+      </tbody>
+    </table>
+    <div id="msg"></div>
+  </div>
+</main>
+
+<footer>Sinkronisasi otomatis tiap 5 detik · Sumber data: Google Spreadsheet via Apps Script</footer>
+
+<script>
+  // GANTI URL DI BAWAH INI dengan URL Web App Apps Script kamu (diakhiri /exec)
+  const API_URL = "https://script.google.com/macros/s/AKfycbyNmIuphHnhtYtiUbl7i42pO5EEZ7ab9WS-jyOYRukJIB3avQDK9zmwiM_1XneiHYL-Gw/exec";
+
+  function tickClock(){
+    document.getElementById('clock').textContent =
+      new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }).toUpperCase();
+  }
+  setInterval(tickClock, 1000);
+  tickClock();
+
+  function phStatus(ph){
+    if (ph < 6.5) return ['ASAM — PERLU TINDAKAN', 'bad'];
+    if (ph > 8.5) return ['BASA — PERLU TINDAKAN', 'bad'];
+    if (ph < 6.8 || ph > 7.8) return ['MENDEKATI BATAS', 'warn'];
+    return ['NORMAL', ''];
+  }
+  function tdsStatus(tds){
+    if (tds > 500) return ['TINGGI — AIR KERUH', 'bad'];
+    if (tds > 300) return ['SEDANG', 'warn'];
+    return ['NORMAL', ''];
+  }
+
+  async function loadData(){
+    const msgEl = document.getElementById('msg');
+    const led = document.getElementById('live-led');
+    try{
+      const res = await fetch(API_URL);
+      const rows = await res.json();
+
+      if (!rows || rows.length === 0){
+        msgEl.textContent = "BELUM ADA DATA DI SPREADSHEET";
+        return;
+      }
+
+      const latest = rows[rows.length - 1];
+      const phVal = Number(latest.ph);
+      const tdsVal = Number(latest.tds);
+
+      document.getElementById('ph-value').innerHTML =
+        phVal.toFixed(2) + '<span class="u">pH</span>';
+      document.getElementById('tds-value').innerHTML =
+        tdsVal.toFixed(1) + '<span class="u">ppm</span>';
+
+      document.getElementById('ph-meter').style.width = Math.min(100, (phVal/14)*100) + '%';
+      document.getElementById('tds-meter').style.width = Math.min(100, (tdsVal/1000)*100) + '%';
+
+      const [phText, phClass] = phStatus(phVal);
+      const [tdsText, tdsClass] = tdsStatus(tdsVal);
+      const phStatusEl = document.getElementById('ph-status');
+      const tdsStatusEl = document.getElementById('tds-status');
+      phStatusEl.textContent = phText;
+      phStatusEl.className = 'status-tag ' + phClass;
+      tdsStatusEl.textContent = tdsText;
+      tdsStatusEl.className = 'status-tag ' + tdsClass;
+
+      const body = document.getElementById('data-body');
+      body.innerHTML = '';
+      rows.slice().reverse().forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.timestamp}</td><td>${Number(r.ph).toFixed(2)}</td><td>${Number(r.tds).toFixed(1)}</td>`;
+        body.appendChild(tr);
+      });
+      document.getElementById('row-count').textContent = rows.length + ' ENTRI';
+      msgEl.textContent = '';
+      led.style.background = 'var(--green)';
+      led.style.boxShadow = '0 0 8px var(--green)';
+    }catch(err){
+      msgEl.textContent = "GAGAL MEMUAT DATA — PERIKSA URL WEB APP / KONEKSI";
+      led.style.background = 'var(--red)';
+      led.style.boxShadow = '0 0 8px var(--red)';
+    }
+  }
+
+  loadData();
+  setInterval(loadData, 5000);
+</script>
+
+</body>
+</html>
